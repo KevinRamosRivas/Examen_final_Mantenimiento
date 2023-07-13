@@ -1,50 +1,71 @@
 import java.util.HashMap;
 
 public class RentalInfo {
-
+  // Metodo que permite generar el reporte de renta
   public String statement(Customer customer) {
-    HashMap<String, Movie> movies = new HashMap();
-    movies.put("F001", new Movie("You've Got Mail", "regular"));
-    movies.put("F002", new Movie("Matrix", "regular"));
-    movies.put("F003", new Movie("Cars", "childrens"));
-    movies.put("F004", new Movie("Fast & Furious X", "new"));
-
+    HashMap<String, Movie> movies = createMovieMap();
     double totalAmount = 0;
     int frequentEnterPoints = 0;
-    String result = "Rental Record for " + customer.getName() + "\n";
+    StringBuilder result = new StringBuilder("Rental Record for " + customer.getName() + "\n");
+
     for (MovieRental r : customer.getRentals()) {
-      double thisAmount = 0;
+      Movie movie = movies.get(r.getMovieId());
+      double thisAmount = calculateAmount(movie, r.getDays());
 
-      // determine amount for each movie
-      if (movies.get(r.getMovieId()).getCode().equals("regular")) {
-        thisAmount = 2;
-        if (r.getDays() > 2) {
-          thisAmount = ((r.getDays() - 2) * 1.5) + thisAmount;
-        }
-      }
-      if (movies.get(r.getMovieId()).getCode().equals("new")) {
-        thisAmount = r.getDays() * 3;
-      }
-      if (movies.get(r.getMovieId()).getCode().equals("childrens")) {
-        thisAmount = 1.5;
-        if (r.getDays() > 3) {
-          thisAmount = ((r.getDays() - 3) * 1.5) + thisAmount;
-        }
-      }
+      frequentEnterPoints += calculateFrequentEnterPoints(movie, r.getDays());
 
-      //add frequent bonus points
-      frequentEnterPoints++;
-      // add bonus for a two day new release rental
-      if (movies.get(r.getMovieId()).getCode() == "new" && r.getDays() > 2) frequentEnterPoints++;
-
-      //print figures for this rental
-      result += "\t" + movies.get(r.getMovieId()).getTitle() + "\t" + thisAmount + "\n";
-      totalAmount = totalAmount + thisAmount;
+      result.append("\t").append(movie.getTitle()).append("\t").append(thisAmount).append("\n");
+      totalAmount += thisAmount;
     }
-    // add footer lines
-    result += "Amount owed is " + totalAmount + "\n";
-    result += "You earned " + frequentEnterPoints + " frequent points\n";
 
-    return result;
+    result.append("Amount owed is ").append(totalAmount).append("\n");
+    result.append("You earned ").append(frequentEnterPoints).append(" frequent points\n");
+
+    return result.toString();
   }
+
+  // Metodo que permite crear un mapa de peliculas
+  private HashMap<String, Movie> createMovieMap() {
+    final String REGULAR = "regular";
+    HashMap<String, Movie> movies = new HashMap<>();
+    movies.put("F001", new Movie("You've Got Mail", REGULAR));
+    movies.put("F002", new Movie("Matrix", REGULAR));
+    movies.put("F003", new Movie("Cars", "childrens"));
+    movies.put("F004", new Movie("Fast & Furious X", "new"));
+    return movies;
+  }
+
+  // Metodo que permite calcular el monto de la renta
+  private double calculateAmount(Movie movie, int days) {
+    switch (movie.getCode()) {
+      case "regular" -> {
+        double amount = 2;
+        if (days > 2) {
+          amount += (days - 2) * 1.5;
+        }
+        return amount;
+      }
+      case "new" -> {
+        return days * 3;
+      }
+      case "childrens" -> {
+        double amount = 1.5;
+        if (days > 3) {
+          amount += (days - 3) * 1.5;
+        }
+        return amount;
+      }
+    }
+    return 0;
+  }
+
+  // Metodo que permite calcular los puntos de renta
+  private int calculateFrequentEnterPoints(Movie movie, int days) {
+    int points = 1;
+    if (movie.getCode().equals("new") && days > 2) {
+      points++;
+    }
+    return points;
+  }
+
 }
